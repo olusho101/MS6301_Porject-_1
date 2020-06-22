@@ -33,6 +33,7 @@ merged <- inner_join(beers, breweries, by='Brew_ID') %>% arrange(Beer_ID)
 ```{r}
 
 #Question 1
+#Number of breweries per state
 breweries_by_state <- breweries %>%  group_by(State) %>% summarize(count = n())
 
 # Notice empty white spaces in the state abbreviation field. Remove it first:
@@ -53,10 +54,19 @@ statesDC <- tibble(state = state.name) %>%
 breweries_by_state_merge <- merge(breweries_by_state, statesDC, by="abbr")
 breweries_by_state_map <- merge(breweries_by_state_merge, statepop, by="abbr")
 
+### Map the total number of breweries in each state:
+plot_usmap(regions = c("states"), data = breweries_by_state_map,
+  values = "count", theme = theme_map(), labels = TRUE,
+  label_color = "black") +
+  scale_fill_continuous(name = "n", low="white", high="#c8102e") +
+  theme(legend.position="right") +
+  labs(title = 'Number of Breweries per state')
+
 
 ```
 
 ```{r}
+#Question 2
 #The first six observations
 head(merged,6)
 
