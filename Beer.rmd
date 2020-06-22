@@ -11,9 +11,14 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(usmap)
+library(maps)
 library(ggplot2)
 library(plotly)
 library(dplyr)
+library(ggthemes)
+library(grid)
+library(tidyr)
+library(stringr)
 ```
 
 ```{r}
@@ -25,6 +30,31 @@ breweries <- read.csv(file.choose()) %>% rename(Brewery_name = Name)
 # Use Brewe_ID as primary key  and sort the result by Beer ID.
 merged <- inner_join(beers, breweries, by='Brew_ID') %>% arrange(Beer_ID)
 ```
+```{r}
+
+#Question 1
+breweries_by_state <- breweries %>%  group_by(State) %>% summarize(count = n())
+
+# Notice empty white spaces in the state abbreviation field. Remove it first:
+breweries_by_state$State <- str_trim(breweries_by_state$State, "left")
+
+# Change the state abbreviation column.
+colnames(breweries_by_state)[1] = "abbr"
+
+# library(maps)
+states <- map_data("state")
+
+# add DC to embedded "state" dataset:
+statesDC <- tibble(state = state.name) %>%
+   bind_cols(tibble(abbr = state.abb)) %>% 
+   bind_rows(tibble(state = "District of Columbia", abb = "DC"))
+
+# merge three dataframes: brewery count per state, state names and abbreviations, and state population data
+breweries_by_state_merge <- merge(breweries_by_state, statesDC, by="abbr")
+breweries_by_state_map <- merge(breweries_by_state_merge, statepop, by="abbr")
+
+
+```
 
 ```{r}
 #The first six observations
@@ -35,4 +65,5 @@ tail(merged,6)
 ```
 
 ```{r}
+
 ```
