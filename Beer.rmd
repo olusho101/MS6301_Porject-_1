@@ -1,1 +1,38 @@
+---
+title: "Untitled"
+author: "Samuel"
+date: "6/21/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 
+```{r dataload, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(usmap)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+```
+
+```{r}
+#Question 2
+# import raw data and change field names 
+beers <- read.csv(file.choose()) %>% rename(Brew_ID = Brewery_id, Beer_name = Name)
+breweries <- read.csv(file.choose()) %>% rename(Brewery_name = Name)
+
+# Use Brewe_ID as primary key  and sort the result by Beer ID.
+merged <- inner_join(beers, breweries, by='Brew_ID') %>% arrange(Beer_ID)
+```
+
+```{r}
+#The first six observations
+head(merged,6)
+
+#The last six observations
+tail(merged,6)
+```
+
+```{r}
+```
