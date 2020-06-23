@@ -19,17 +19,21 @@ library(ggthemes)
 library(grid)
 library(tidyr)
 library(stringr)
+library(naniar)
+library(visat)
+library(mice)
+library(rpart)
+library(rpart.plot)
 ```
 
 ```{r}
-#Question 2
+
 # import raw data and change field names 
 beers <- read.csv(file.choose()) %>% rename(Brew_ID = Brewery_id, Beer_name = Name)
 breweries <- read.csv(file.choose()) %>% rename(Brewery_name = Name)
 
-# Use Brewe_ID as primary key  and sort the result by Beer ID.
-merged <- inner_join(beers, breweries, by='Brew_ID') %>% arrange(Beer_ID)
 ```
+
 ```{r}
 
 #Question 1
@@ -67,6 +71,10 @@ plot_usmap(regions = c("states"), data = breweries_by_state_map,
 
 ```{r}
 #Question 2
+
+# Use Brewe_ID as primary key  and sort the result by Beer ID.
+merged <- inner_join(beers, breweries, by='Brew_ID') %>% arrange(Beer_ID)
+
 #The first six observations
 head(merged,6)
 
@@ -75,5 +83,105 @@ tail(merged,6)
 ```
 
 ```{r}
+#Question 3
+#Addressing missing value
+vis_miss(merged) #This funtion is from package naniar and very effective for visualizing missing values
+md.pattern(merged) #This function also address the pattern of a missing value, its from the The MICE package (stands for Multiple Imputation by Chained Equations)
 
+#### We see that there are 3 patterns: 
+ # 1067  observations with complete information 
+#  1005 observations have a NA in IBU
+ #   62  observations have a NA in ABV
+
+```
+
+# Data Exploration:
+Determine Which Variables Have Missing Values and How Many
+```{r}
+n_cols = dim(merged)[2]
+for (i in 1:n_cols)
+{
+  print(c(colnames(merged[i]), sum(is.na(merged[i]))))
+}
+# It appears that ABV (62) and IBU(1005) are the only columns with missing values.
+
+# Extract the row indices of the missing values
+missingIBUindex <- which(is.na(merged$IBU))
+missingABVindex <- which(is.na(merged$ABV))
+allNAindex <- c(missingIBUindex,missingABVindex)
+length(missingIBUindex)
+length(unique(allNAindex)) 
+```
+
+# Fill IBU missing values: 
+We used a regression tree with ABV and Beer Style as predictors to fill missing IBU values.
+Filled IBU values are placed in the merged data frame as merged$IBUfill.
+```{r}
+# Let's try a regression tree (CART)...throw the kitchen sink at it...:)
+# If I get some time, I'd like to tree a bagging algorithm: http://uc-r.github.io/regression_trees
+library(rpart)
+library(rpart.plot)
+# ?rpart
+
+# Get data into the right format:
+Training_IBU_rtreeTrain <- merged[-missingIBUindex,] %>% 
+  select(ABV,Style,Brewery_name,City,State,Ounces,IBU)
+
+Filling_IBU_rtreeTrain <- merged[missingIBUindex,] %>% 
+  select(ABV,Style,Brewery_name,City,State,Ounces,IBU)
+
+# set up train/test split
+set.seed(8)
+splitPerc = .75
+trainIndices = sample(1:dim(Training_IBU_rtreeTrain)[1],round(splitPerc * dim(Training_IBU_rtreeTrain)[1]))
+train = Training_IBU_rtreeTrain[trainIndices,]
+test = Training_IBU_rtreeTrain[-trainIndices,]
+
+# train the model
+rtreeTrain <- rpart(IBU ~ ABV+Style, 
+               data = train,
+               method = "anova",
+               control = list(cp = 0.0001, xval = 1000))
+
+plotcp(rtreeTrain) # visualize relative error by tree size
+# prp(rtreeTrain) # visualize the tree structure
+
+######
+# evaluate model performance
+rtreeTrain.pred = predict(rtreeTrain, test)
+rtreeTrain.sse = sum((rtreeTrain.pred - test$IBU)^2)
+rtreeTrain.mse = mean((rtreeTrain.pred - test$IBU)^2)
+rtreeTrain.rmse = sqrt(mean((rtreeTrain.pred - test$IBU)^2))
+rtreeTrain.sse
+rtreeTrain.mse
+rtreeTrain.rmse
+
+test$predictions <- rtreeTrain.pred
+
+test %>% ggplot(aes(x=IBU, y=predictions)) +
+  geom_point(col="#13294b") +
+  geom_text(x=25, y=110, label="RMSE = 13.1") +
+  geom_text(x=20, y = 100, label='R2 = 0.75') +
+  geom_smooth(method='lm', col="#c8102e") +
+  labs(title='Regression Tree Model Performance', x="Actual IBU", y="Predicted IBU")
+######
+
+# now that model performance is complete, fit a new model using all available data. This model will be used to fill IBU values.
+rtreeTrain <- rpart(IBU ~ ABV+Style, 
+               data = Training_IBU_rtreeTrain,
+               method = "anova",
+               control = list(cp = 0.0001, xval = 1000))
+
+### sanity check before updating the "merged" data frame
+# merged$IBU[missingIBUindex[1]]
+# merged$IBU[missingIBUindex[2]]
+# predict(rtreeTrain, Filling_IBU_rtreeTrain[1,])
+# predict(rtreeTrain, Filling_IBU_rtreeTrain[2,])
+
+merged$IBUfill <- merged$IBU
+merged$IBUfill[missingIBUindex] <- predict(rtreeTrain, Filling_IBU_rtreeTrain)
+
+### complete the sanity check:
+# merged$IBU[missingIBUindex[1]]
+# merged$IBU[missingIBUindex[2]]
 ```
