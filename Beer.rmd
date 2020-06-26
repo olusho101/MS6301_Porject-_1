@@ -153,3 +153,47 @@ MaxAbv <- merged_remove %>% group_by(State) %>% summarize(max_abv = max(ABV,na.r
 MaxIBU <- merged_remove %>% group_by(State) %>% summarize(max_ibu = max(IBU,na.rm=TRUE)) %>% arrange(desc(max_ibu))
 
 ```
+
+# Question 6
+Comment on the summary statistics and distribution of the ABV variable.
+```{r}
+
+summary(merged$ABV)
+sd(merged$ABV,na.rm=TRUE)
+```
+
+```{r}
+merged %>% 
+  ggplot(aes(sample=ABV)) +
+  stat_qq() + stat_qq_line() + 
+  ggtitle('Quantile-Quantile plot of ABV data')
+```
+
+From the upward curve in this plot, we infer that the data are somewhat skewed.
+This confirms what the histogram shows.  The apparent discontinuities at the
+ends of the curve are an indication that the ABV values have a few more extreme
+values than would be expected from a normal distribution.  This confirms what
+was shown in the box plot.
+
+```
+#Question 7
+```{r}
+MergedABVCLeaned <- merged$ABV
+MergedABVCLeaned[-which(is.na(MergedABVCLeaned))]
+
+MergedIBUCLeaned <- merged$IBU
+MergedIBUCLeaned[-which(is.na(MergedIBUCLeaned))]
+```
+# Fit linear model:
+```{r}
+IBUvsABU <- lm(MergedIBUCLeaned~MergedABVCLeaned)
+summary(IBUvsABU)
+```
+
+# Scatterplot with statistics:
+```{r}
+merged %>% ggplot(aes(x=IBU, y=ABV)) +
+  geom_point(col="#13294b") +
+  geom_text(x=125, y=0.01, label="R2 = 0.42") +
+  geom_smooth(method='lm', col="#c8102e") +
+  labs(title='IBU v ABV', x='IBU', y='ABV')
