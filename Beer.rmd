@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r dataload, include=TRUE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(usmap)
 library(maps)
@@ -20,17 +20,15 @@ library(grid)
 library(tidyr)
 library(stringr)
 library(naniar)
-library(visat)
 library(mice)
 library(rpart)
 library(rpart.plot)
 ```
 
 ```{r}
-
-# import raw data and change field names 
-beers <- read.csv(file.choose()) %>% rename(Brew_ID = Brewery_id, Beer_name = Name)
-breweries <- read.csv(file.choose()) %>% rename(Brewery_name = Name)
+#import raw data and change field names 
+beers <- read.csv("Beers.csv") %>% rename(Brew_ID = Brewery_id, Beer_name = Name)
+breweries <- read.csv("Breweries.csv") %>% rename(Brewery_name = Name)
 
 ```
 
