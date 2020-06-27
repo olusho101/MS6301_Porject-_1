@@ -63,6 +63,8 @@ plot_usmap(regions = c("states"), data = breweries_by_state_map,
   scale_fill_continuous(name = "n", low="white", high="#c8102e") +
   theme(legend.position="right") +
   labs(title = 'Number of Breweries per state')
+#Histogram of the number of bweries per states 
+breweries %>% ggplot(aes(x=State)) + geom_histogram(stat="count")
 
 
 ```
@@ -145,10 +147,13 @@ MedianIBU %>% ggplot(aes(x = State, y = median_IBU)) + geom_col(color="black",fi
 ```{r}
 #Question 5
 # drop any observations without valid ABV values, group by state, and compute the Max
-MaxAbv <- merged_remove %>% group_by(State) %>% summarize(max_abv = max(ABV,na.rm=TRUE)) %>% arrange(desc(max_abv))
+ MaxAbv<- merged_remove %>% group_by(State) %>% summarize(max_abv = max(ABV,na.rm=FALSE)) %>% arrange(desc(max_abv))
 
 # drop any observations without valid IBU values, group by state, and compute the Max
 MaxIBU <- merged_remove %>% group_by(State) %>% summarize(max_ibu = max(IBU,na.rm=TRUE)) %>% arrange(desc(max_ibu))
+
+#Narrow down to first 5 highest IBU
+MaxIBU %>% filter(State == " OR" | State == " VA" | State == " MA" | State == " OH" | State == " MN") %>% ggplot(aes(x = State, y = MaxIBU)) + geom_bar(stat='identity', fill = "#13294b", width=.9) + coord_flip() + geom_text(aes(label = MaxIBU), position = position_dodge(width = 0.9), hjust = +1.25, col = "white") + labs(title = "States with the Highest IBU", "States", y = "IBU")
 
 ```
 
@@ -165,6 +170,9 @@ merged %>%
   ggplot(aes(sample=ABV)) +
   stat_qq() + stat_qq_line() + 
   ggtitle('Quantile-Quantile plot of ABV data')
+
+#Boxplot representation of the summary statistics
+merged %>% ggplot(aes(x=State,y=ABV)) + geom_boxplot()
 ```
 
 From the upward curve in this plot, we infer that the data are somewhat skewed.
@@ -196,4 +204,34 @@ merged %>% ggplot(aes(x=IBU, y=ABV)) +
   geom_smooth(method='lm', col="#c8102e") +
   labs(title='IBU v ABV', x='IBU', y='ABV')
   
+  #Boxplot graphical representation of the relationship between ABV and IBU
+  merged %>% ggplot(aes(x=IBU,y=ABV, fill=State)) + geom_boxplot() #ABV and IBU variance by state
   
+  
+```
+
+```{R}
+#8 IPA knn classifications
+#reference code:
+#row_to_keep = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE)
+#myData = myData[row_to_keep,]
+
+IPA_data <- grepl("IPA", merged$Style) #records true for each style IPA
+IPA_df = merged[IPA_data,] #dataset containing only IPA styles
+
+library(class)
+library(caret)
+
+IPA_df_clean = na.omit(IPA_df) #remove NA values
+#plot for IPA styles knn classifiers
+IPA_df_clean %>% ggplot(aes(x=IBU,y=ABV,color=Style)) + geom_point() #ABV and IBU variance by state
+
+test_df = data.frame(ABV = 0.07 , IBU = 40)
+knn(IPA_df_clean[,c(4,5)], test_df, IPA_df_clean$Style, k = 31, prob = TRUE)
+#use k equal to cluster size with approximation of center as test_df?
+
+##knn classification and confusion matrix
+classifications = knn.cv(IPA_df_clean[,c(4,5)], IPA_df_clean$Style, k=21)
+data.frame(classifications = classifications, true = IPA_df_clean$Style)
+confusionMatrix(table(classifications,IPA_df_clean$Style))
+```
