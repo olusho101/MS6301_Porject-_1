@@ -1,6 +1,6 @@
 ---
-title: "Untitled"
-author: "Samuel"
+title: "Case study 1"
+author: "Samuel, Eric and Amber"
 date: "6/21/2020"
 output: html_document
 editor_options: 
