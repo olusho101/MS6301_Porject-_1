@@ -152,8 +152,7 @@ MedianIBU %>% ggplot(aes(x = State, y = median_IBU)) + geom_col(color="black",fi
 # drop any observations without valid IBU values, group by state, and compute the Max
 MaxIBU <- merged_remove %>% group_by(State) %>% summarize(max_ibu = max(IBU,na.rm=TRUE)) %>% arrange(desc(max_ibu))
 
-#Narrow down to first 5 highest IBU
-MaxIBU %>% filter(State == " OR" | State == " VA" | State == " MA" | State == " OH" | State == " MN") %>% ggplot(aes(x = State, y = MaxIBU)) + geom_bar(stat='identity', fill = "#13294b", width=.9) + coord_flip() + geom_text(aes(label = MaxIBU), position = position_dodge(width = 0.9), hjust = +1.25, col = "white") + labs(title = "States with the Highest IBU", "States", y = "IBU")
+
 
 ```
 
