@@ -196,3 +196,4 @@ merged %>% ggplot(aes(x=IBU, y=ABV)) +
   geom_smooth(method='lm', col="#c8102e") +
   labs(title='IBU v ABV', x='IBU', y='ABV')
   
+  
